@@ -62,8 +62,9 @@ def CHI(t,HI,L):
 # L is the length of a outlier region
     if len(t) != len(HI):
         print('The lengths of t and HI should be the same')
-
+    
     num = len(HI)
+    cHI = HI.copy()
     d_t = (t[num-1] - t[0]) / num
     dHI = np.zeros(num-1)
     for i in range(num-1):     # diference of HI
@@ -72,40 +73,37 @@ def CHI(t,HI,L):
     y_up = np.mean(dHI) + 3 * np.std(dHI)  # upper threshold 
     y_lo = np.mean(dHI) - 3 * np.std(dHI)  # lower threshold
 
-    p_num = 0
-    n_num = 0
-    po = np.array([[],[]])         #
-    A = np.array([[],[]])         # 1-row:position i; 2-row:HI(i); 
+    p_num = 0                 # number of positive outlier points
+    n_num = 0                 # number of negtive outlier points
+    m = 0                     #
+    A_num = np.array([])      # array for length of each positive outlier zone
+    B_num = np.array([])      # array for length of each negtive outlier zone
+    po = np.array([])         # poisition of positive outlier
+    no = np.array([])         # position of negtive outlier 
     
-    for i in range(num-L-1): 
-        if dHI[i] <= y_up and dHI[i] >= y_lo: #normal zone
-            cHI[i] = dHI[i]      
-
-        elif dHI[i] > y_up:                                     # CHI for positive outlier
-            po = np.append(po,[[i],[HI[i]]], axis=1)
-            p_num += 1                                          # outlier point number   
-            if dHI[i+1] <= y_up and p_num > L:        # meet two requirements:1) after L points are nagtive outliers;2)num of positive outlier is greater than L; 
-                p_n = np.array([dHI[i:]])             #  dHI values after the i-th point
-                if p_n[:L-1].all()<y_lo
-                    A = np.append(A, po, axis=1)
-                    for j in range(len(p_n)):
-                        A = np.append(A,[[i+j+1],[HI[i+j+1]]],axis=1)
-                        n_num +=1
-                        while p_n[j] > y_lo:
-                            break
-                    m = len(A)
-                    cHI[i] = A[1,0] + (t[i]-t[A[0,0]])(A[1,m-1]- A[1,0]) / (t[A[0,m-1]]-t[A[0,0]])
-
-                    po = np.array([[],[],[]])
-                    A = np.array([[],[],[]])
-                    p_num = 0
-                    n_num = 0
-                else:
-                    cHI[i] = dHI[i]
-                    po = np.array([[],[],[]])
-                    A = np.array([[],[],[]])
-                    p_num = 0
-       
+    
+    for i in range(num-1):
+        if dHI[i] > y_up:
+            po = np.append(po,[i])
+            p_num += 1
+            if dHI[i+1] <= y_up:
+                A_num = np.append(A_num, [p_num])
+                p_num = 0
+                
+        elif dHI[i] < y_lo:
+            no = np.append(no,[i])
+            n_num +=1
+            if dHI[i+1] >=y_lo:
+                B_num = np.append(B_num,[n_num])
+                n_num = 0    
+    
+    for i in range(len(A_num)):
+        if A_num[i] > L and B_num[i] > L:
+            p_r = po[np.sum(A_num[:i]):np.sum(A_num[:(i+1)])]
+            n_r = no[np.sum(B_num[:i]):np.sum(B_num[:(+1)])]
+            oz = sorted(np.append(p_r,n_r))
+            cHI[oz[0]:oz[-1]] = HI[oz[0]] + (HI[oz[-1]]-HI[oz[0]]) /(t[oz[-1]]-t(oz[0])) * (t[oz[0]:oz[-1]] - t[oz[0]])
+                       
     return(cHI)
 
 print(CHI(x,y_n,5))
