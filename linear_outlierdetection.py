@@ -75,7 +75,6 @@ def CHI(t,HI,L):
 
     p_num = 0                 # number of positive outlier points
     n_num = 0                 # number of negtive outlier points
-    m = 0                     #
     A_num = np.array([])      # array for length of each positive outlier zone
     B_num = np.array([])      # array for length of each negtive outlier zone
     po = np.array([])         # poisition of positive outlier
@@ -88,8 +87,7 @@ def CHI(t,HI,L):
             p_num += 1
             if dHI[i+1] <= y_up:
                 A_num = np.append(A_num, [p_num])
-                p_num = 0
-                
+                p_num = 0    
         elif dHI[i] < y_lo:
             no = np.append(no,[i])
             n_num +=1
@@ -100,9 +98,10 @@ def CHI(t,HI,L):
     for i in range(len(A_num)):
         if A_num[i] > L and B_num[i] > L:
             p_r = po[np.sum(A_num[:i]):np.sum(A_num[:(i+1)])]
-            n_r = no[np.sum(B_num[:i]):np.sum(B_num[:(+1)])]
+            n_r = no[np.sum(B_num[:i]):np.sum(B_num[:(i+1)])]
             oz = sorted(np.append(p_r,n_r))
             cHI[oz[0]:oz[-1]] = HI[oz[0]] + (HI[oz[-1]]-HI[oz[0]]) /(t[oz[-1]]-t(oz[0])) * (t[oz[0]:oz[-1]] - t[oz[0]])
+            oz = np.array([])
                        
     return(cHI)
 
