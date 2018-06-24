@@ -2,19 +2,17 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy as sp
-import tensorflow as tf
 
 x = np.linspace(0,1,num=1024)
-y = x
+y = x / 2
 y = y / np.max(y)
 yo = y.copy()
 
 # two positive outliers
 y[200:215] = y[200:215] + np.linspace(1,15, num=15) / 100
-y[215:230] = y[215:230] + np.linspace(15,1, num=15) / 100
+y[215:230] = y[215:230] + 0.94 * np.linspace(15,1, num=15) / 100
 y[400:420] = y[400:420] + np.linspace(1,20,num=20) / 100
-y[420:440] = y[420:440] + np.linspace(20,1,num=20) / 100
+y[420:440] = y[420:440] + 0.94 *np.linspace(20,1,num=20) / 100
 
 
 # two negative outliers
@@ -25,7 +23,7 @@ y[800:820] = y[800:820] - np.linspace(1,20,num=20) / 100
 y[820:840] = y[820:840] - np.linspace(20,1,num=20) / 100
 '''
 
-noise = 0.0001 * np.random.randn(1024)
+noise = 0.00001 * np.random.randn(1024)
 y_n = y + noise     # with outliers 
 yo_n = yo+ noise    # without outliers
 
@@ -55,6 +53,14 @@ y_lo = np.mean(d_y) - 3 * np.std(d_y) * np.ones(1023)
 yo_up = np.mean(d_yo) + 3 * np.std(d_yo) * np.ones(1023)
 yo_lo = np.mean(d_yo) - 3 * np.std(d_yo) * np.ones(1023)
 
+
+plt.figure(2)
+plt.subplot(121)
+plt.plot(x[:1023],d_y,'b*', x[:1023], y_up, 'r--', x[:1023], y_lo, 'r--')
+
+plt.subplot(122)
+plt.plot(x[:1023],d_yo,'b*', x[:1023], yo_up, 'r--', x[:1023], yo_lo, 'r--')
+plt.show()   
 
 def CHI(t,HI,L): 
 # t is time
@@ -86,46 +92,38 @@ def CHI(t,HI,L):
             po = np.append(po,[i])
             p_num += 1
             if dHI[i+1] <= y_up:
-                A_num = np.append(A_num, [p_num])
+                A_num = np.append(A_num,[int(p_num)])
                 p_num = 0    
         elif dHI[i] < y_lo:
             no = np.append(no,[i])
             n_num +=1
             if dHI[i+1] >=y_lo:
-                B_num = np.append(B_num,[n_num])
+                B_num = np.append(B_num,[int(n_num)])
                 n_num = 0    
     
     for i in range(len(A_num)):
         if A_num[i] > L and B_num[i] > L:
-            p_r = po[np.sum(A_num[:i]):np.sum(A_num[:(i+1)])]
-            n_r = no[np.sum(B_num[:i]):np.sum(B_num[:(i+1)])]
-            oz = sorted(np.append(p_r,n_r))
-            cHI[oz[0]:oz[-1]] = HI[oz[0]] + (HI[oz[-1]]-HI[oz[0]]) /(t[oz[-1]]-t(oz[0])) * (t[oz[0]:oz[-1]] - t[oz[0]])
-            oz = np.array([])
+            ps_A = int(np.sum(A_num[:i]))
+            pe_A = int(np.sum(A_num[:(i+1)]))
+            p_r = po[ps_A:pe_A]
+            ps_B = int(np.sum(B_num[:i]))
+            pe_B = int(np.sum(B_num[:(i+1)]))
+            n_r = no[ps_B:pe_B]
+            oz = np.array(sorted(np.append(p_r,n_r))).astype(int)
+            cHI[oz[0]-1:oz[-1]+1] = HI[oz[0]-1] + (HI[oz[-1]+1]-HI[oz[0]-1]) /(t[oz[-1]+1]-t[oz[0]-1]) * (t[oz[0]-1:oz[-1]+1] - t[oz[0]-1])
+            oz = []
                        
     return(cHI)
 
-print(CHI(x,y_n,5))
+ 
+yc = CHI(x,y_n,5)
 
-plt.figure(2)
-plt.subplot(121)
-plt.plot(x[:1023],d_y,'b*', x[:1023], y_up, 'r--', x[:1023], y_lo, 'r--')
-
-plt.subplot(122)
-plt.plot(x[:1023],d_yo,'b*', x[:1023], yo_up, 'r--', x[:1023], yo_lo, 'r--')
-plt.show()    
-                
+plt.plot(x,yc)
+plt.show()
 
 
 
-
-
-
-
-         
-'''           
-
-
+'''         
 
 
 def trend_1(t,HI): # trendability _ 1 
@@ -191,9 +189,8 @@ def rob(t,HI): # robustness
 print(rob(x,y_n))
 print(rob(x,yo_n))
 
+
 '''
-
-
 
 
 

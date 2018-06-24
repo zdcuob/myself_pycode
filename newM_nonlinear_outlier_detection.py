@@ -30,10 +30,10 @@ yo_n = yo+ noise    # without outliers
 
 plt.figure(1)
 plt.subplot(121)
-plt.plot(x,y_n,'*')
+plt.plot(x,y_n)
 
 plt.subplot(122)
-plt.plot(x,yo_n,'*')
+plt.plot(x,yo_n)
 plt.show()
 
 '''
@@ -79,35 +79,87 @@ plt.plot(x[:num-1],d_yo,'*b')
 plt.show()
 '''
 
-def nHI(t,HI,L,a)
-# t is time
-# HI is the difference of the original health index;
-# L is the length of a sub-region
-# 1-a is cross ratio
+def NHI(t,HI,L,l,a):
+
+#t is time
+#HI is the difference of the original health index;
+#L is the length of a sub-region
+#l is is the length of a outlier region
+#1-a is cross ratio
+
     if len(t) != len(HI):
         print('The lengths of t and HI should be the same')
     
     num = len(HI)
-    cHI = HI.copy()
-    d_t = (t[num-1] - t[0]) / num
-    dHI = [(HI[i+1]- HI[i]) / d_t for i in range(num-1)]
+    nHI = HI.copy()
+    d_t = t[1] - t[0]
+    dHI = np.zeros(num-1)
+    for i in range(num-1):     # diference of HI
+        dHI[i] = (HI[i+1]- HI[i]) / d_t
 
-    remainder = (num - 1) % L
-    if  remainder == 0:
-        sr_n = (num - 1) // L
-        sr = np.zeros((sr_n,L))
-        for i in range(sr_n):
-            sr[i,:] = dHI[i*L:(i+1)*L]
-            
-    else:
-        sr_n = (num - 1) // L + 1
+    n = 0 # number of layer
+    p_num = 0
+    n_num = 0
+    sr = np.zeros(L)
+    st = np.array(n*L - np.floor(n*a*L)).astype(int)
+    en = np.array((n+1)*L - np.floor(n*a*L)).astype(int)
+    po = np.array([])
+    no = np.array([])
+    A_num = np.array([])
+    B_num = np.array([])
     
-    
+    while en <= num-1:
+        robsd = np.median(np.abs(dHI[st:en] - np.median(dHI[st:en])))
+        y_mup = np.median(dHI[st:en]) + 9 * robsd 
+        y_mlo = np.median(dHI[st:en]) - 9 * robsd
 
-    
+        for i in range(st,en):
+            if dHI[i] > y_mup:
+                po = np.append(po,[i])
+                p_num += 1
+                if dHI[i+1] <= y_mup:
+                    A_num = np.append(A_num,[p_num])
+                    p_num = 0    
+            elif dHI[i] < y_mlo:
+                no = np.append(no,[i])
+                n_num +=1
+                if dHI[i+1] >=y_mlo:
+                    B_num = np.append(B_num,[n_num])
+                    n_num = 0   
+
+        if len(A_num) != 0:
+            for i in range(len(A_num)):
+                if A_num[i] > l and B_num[i] > l:
+                    ps_A = int(np.sum(A_num[:i]))
+                    pe_A = int(np.sum(A_num[:(i+1)]))
+                    p_r = po[ps_A:pe_A]
+                    ps_B = int(np.sum(B_num[:i]))
+                    pe_B = int(np.sum(B_num[:(i+1)]))
+                    n_r = no[ps_B:pe_B]
+                    oz = np.array(sorted(np.append(p_r,n_r))).astype(int)
+                    nHI[oz[0]-1:oz[-1]+1] = HI[oz[0]-1] + (HI[oz[-1]+1]-HI[oz[0]-1]) /(t[oz[-1]+1]-t[oz[0]-1]) * (t[oz[0]-1:oz[-1]+1] - t[oz[0]-1])
+                    oz = []
+
+        dHI = np.array([(nHI[i+1] - nHI[i]) / d_t for i in range(num-1)])
+        po = np.array([])
+        no = np.array([])
+        p_num = 0
+        n_num = 0
+        A_num = np.array([])
+        B_num = np.array([])
+
+        n += 1
+        st = np.array(n*L - np.floor(n*a*L)).astype(int)
+        en = np.array((n+1)*L - np.floor(n*a*L)).astype(int)        
+        if en > len(dHI):
+            break
+      
+    return(nHI)
+        
 
 
-
+plt.plot(x,NHI(x,y_n,L=101,l=5,a=0.5) )
+plt.show()
 
 
 
